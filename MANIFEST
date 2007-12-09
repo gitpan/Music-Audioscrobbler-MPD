@@ -1,0 +1,10 @@
+bin/musicmpdscrobble
+Changes
+examples/gentoo_init_script
+examples/musicmpdscrobble_example.conf
+lib/Music/Audioscrobbler/MPD.pm
+Makefile.PL
+MANIFEST
+README
+t/simple.t
+META.yml                                 Module meta-data (added by MakeMaker)
