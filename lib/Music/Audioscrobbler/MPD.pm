@@ -1,5 +1,5 @@
 package Music::Audioscrobbler::MPD;
-our $VERSION = 0.03;
+our $VERSION = 0.04;
 
 # Copyright (c) 2007 Edward J. Allen III
 # Some code and inspiration from Audio::MPD Copyright (c) 2005 Tue Abrahamsen, Copyright (c) 2006 Nicholas J. Humfrey, Copyright (c) 2007 Jerome Quelin
@@ -64,8 +64,8 @@ sub _default_options {
        optionfile       => [ "/etc/musicmpdscrobble.conf", $ENV{HOME} . "/.musicmpdscrobble.conf" ],
        runonstart       => [],
        runonsubmit      => [],
-       lastfm_client_id => "tst",
-       lastfm_client_version => "1.0",
+       lastfm_client_id => "mam",
+       lastfm_client_version => "0.1",
        music_tag_opts        => {
                            quiet     => 1,
                            verbose   => 0,
@@ -103,6 +103,10 @@ sub new {
             delete $self->options->{lastfm_password};
         }
     }
+
+	if ($self->options->{lastfm_client_id} eq "tst") {
+		$self->status(0, "WARNING: Using client id 'tst' is NO LONGER approved.  Please use 'mam' or other assigned ID");
+	}
     return $self;
 }
 

@@ -1,3 +1,8 @@
+Release Name: 0.04
+============================
+ * Have been assigned Client ID.  If you set this in your configs,
+   please remove.
+
 Release Name: 0.03
 ============================
  * Name change for module.  Is now Music::Audioscrobbler::MPD.  Uninstall old

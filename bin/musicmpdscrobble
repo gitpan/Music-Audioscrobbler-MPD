@@ -4,7 +4,7 @@ use Music::Audioscrobbler::MPD;
 use Getopt::Long;
 use Proc::Daemon;
 use Pod::Usage;
-our $VERSION = .01;
+our $VERSION = 0.04;
 our %cloptions = ( pidfile => "/var/run/musicmpdscrobble.pid", );
 our $clopts = [
                 [  "daemonize" => \$cloptions{daemonize},
@@ -139,7 +139,7 @@ Set path to config file (default /etc/musicmpdscrobble.conf)
 
 Print summery of command options and quit.
 
-=longhelp
+=item longhelp
 
 Print this.
 
@@ -163,12 +163,6 @@ after editing it.  Here is an example config file:
 	# LastFM Username and Password
 		lastfm_username   => "riemann42", 
 		lastfm_password   => "secret", 
-
-	# Specify last.fm client information.  Change this to code provided by last.fm
-	# if you are releasing an application that is not a demo or test.
-	# 
-	#   lastfm_client_id => "tst",
-	#   lastfm_client_version => "1.0",
 
 	# Specify mpd_server info.  Default is MPD_HOST or localhost
 	#       mpd_server => 'localhost',

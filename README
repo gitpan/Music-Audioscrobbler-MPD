@@ -3,16 +3,16 @@ Music::Audioscrobbler::MPD version 0.02
 
 Simple Module to provide a scrobbling service for MPD.  
 
-DISCLAIMER
+CLIENT ID
 
-This is BETA code for testing ONLY.  The included program musicmpdscrobble is an 
-example implementation only of Music::Audioscrobbler::MPD.  A formal release requires an 
-ID from last.fm.  While testing your application, you may use the "tst" ID.
+This module now has an assigned client id of "mam" and no longer uses "tst." 
+Please do not override this with "tst" in your config files unless you have
+made major changes to the code and are testing these changes.
 
 NOTE
 
-This module has CHANGED NAMES.  It is now Music::Audioscrobbler::MPD.  Old versions will be
-REMOVED from CPAN.  Please uninstall them!
+This module has CHANGED NAMES.  It is now Music::Audioscrobbler::MPD.  Old 
+versions will be REMOVED from CPAN.  Please uninstall them!
 
 INSTALLATION
 
