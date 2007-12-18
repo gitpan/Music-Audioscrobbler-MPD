@@ -1,5 +1,5 @@
 package Music::Audioscrobbler::MPD;
-our $VERSION = 0.04;
+our $VERSION = 0.05;
 
 # Copyright (c) 2007 Edward J. Allen III
 # Some code and inspiration from Audio::MPD Copyright (c) 2005 Tue Abrahamsen, Copyright (c) 2006 Nicholas J. Humfrey, Copyright (c) 2007 Jerome Quelin
@@ -13,13 +13,13 @@ our $VERSION = 0.04;
 
 =head1 NAME
 
-Music::Audioscrobbler::MPD - Module providing routines to submit songs to last.fm from MPD 
+Music::Audioscrobbler::MPD - Module providing routines to submit songs to last.fm from MPD.
 
 =head1 SYNOPSIS
 
-use Music::Audioscrobbler::MPD
-my $mpds = Music::Audioscrobbler::MPD->new(\%options); 
-$mpds->monitor_mpd();
+	use Music::Audioscrobbler::MPD
+	my $mpds = Music::Audioscrobbler::MPD->new(\%options); 
+	$mpds->monitor_mpd();
 
 =head1 AUTHOR
 
@@ -27,9 +27,9 @@ Edward Allen, ealleniii _at_ cpan _dot_ org
 
 =head1 DESCRIPTION
 
-The motiviation behind this was to provide a convenient method for fixing broken tags.
+Music::Audioscrobbler::MPD is a scrobbler for MPD.  It may one day be distributed in a package called Music::Audioscrobbler, but is independent at the momment.
 
-This module is a wrapper module, which calls various plugin modules to find information about a music file and write it back into the tag. 
+All internal code is subject to change.  See L<musicmpdscrobble> for usage info.
 
 =cut
 
@@ -82,7 +82,7 @@ sub _default_options {
 
 =item new()
 
-my $mpds = Music::Audioscrobbler::MPD->new($options);
+	my $mpds = Music::Audioscrobbler::MPD->new($options);
 
 =cut
 
@@ -199,6 +199,10 @@ Path to file to queue info to
 
 Root to MP3 files
 
+=item get_mbid_from_mb
+
+Use the Music::Tag::MusicBrainz plugin to get missing "mbid" value.
+
 =item runonsubmit			
 
 Array of commands to run after submit
@@ -241,7 +245,6 @@ sub options {
 =pod
 
 =head1 INTERNAL METHODS (for reference)
-
 
 =item mpdsock()
 
@@ -488,11 +491,11 @@ sub logfileout {
     }
     unless ( ( exists $self->{logfile} ) && ( $self->{logfile} ) ) {
         my $fh = IO::File->new( $self->options->{logfile}, ">>" );
-        $fh->autoflush(1);
         unless ($fh) {
             print STDERR "Error opening log, using STDERR: $!";
             return \*STDERR;
         }
+        $fh->autoflush(1);
         $self->{logfile} = $fh;
     }
     return $self->{logfile};
@@ -561,7 +564,7 @@ Run on song change
 sub song_change {
     my $self  = shift;
     my $cinfo = shift;
-    if ( ( $self->{current_file} )
+    if ( ( defined $self->{current_file} )
          and (    ( $self->{running_time} >= 240 )
                or ( $self->{running_time} >= ( $self->{song_duration} / 2 ) ) )
          and ( ( $self->{song_duration} >= 30 ) or ( $self->{info}->{mbid} ) )
@@ -797,6 +800,16 @@ sub info_to_hash {
     }
     elsif ( ref $info ) {
         my $ret = {};
+		if ($self->options->{get_mbid_from_mb}) {
+			$self->status(2, "Attempting to get mbid from MusicBrainz");
+			$self->get_mbid($info, {quiet => 1, verbose => 0});
+			if ($info->mb_trackid) {
+				$self->status(2, "Got mbid: ", $info->mb_trackid);
+			}
+			else {
+				$self->status(2, "Failed to get mbid from MusicBrainz");
+			}
+		}
         $ret->{artist}   = $info->artist;
         $ret->{title}    = $info->title;
         $ret->{secs}     = int( $info->secs ) || 300;
@@ -1025,6 +1038,15 @@ sub deserialize_info {
     return ( \%ret, $ret{timestamp} );
 }
 
+sub get_mbid {
+	my $self = shift;
+	my $info = shift;
+	unless ($info->mb_trackid) {
+		my $mb = $info->add_plugin("MusicBrainz");
+		$mb->get_tag();
+	}
+}
+
 sub submit {
     my $self = shift;
     foreach my $s (@_) {
@@ -1062,12 +1084,14 @@ sub process_scrobble_queue {
 
 =head1 SEE ALSO
 
-L<mpdscrobble.pl>
+L<musicmpdscrobble>, L<Music::Tag>
 
 =head1 COPYRIGHT
 
 Copyright (c) 2007 Edward J. Allen III
-Some code and inspiration from L<Audio::MPD> Copyright (c) 2005 Tue Abrahamsen, Copyright (c) 2006 Nicholas J. Humfrey, Copyright (c) 2007 Jerome Quelin
+
+Some code and inspiration from L<Audio::MPD> 
+Copyright (c) 2005 Tue Abrahamsen, Copyright (c) 2006 Nicholas J. Humfrey, Copyright (c) 2007 Jerome Quelin
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.7 or,

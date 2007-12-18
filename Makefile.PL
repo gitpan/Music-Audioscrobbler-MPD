@@ -2,7 +2,7 @@ use ExtUtils::MakeMaker;
 WriteMakefile( NAME         => "Music::Audioscrobbler::MPD",
                VERSION_FROM => "lib/Music/Audioscrobbler/MPD.pm",
                ABSTRACT     => 'MPD Audioscrobbler Routines',
-               AUTHOR       => 'Edward Allen (edwardallenthethird@hotmail.com)',
+               AUTHOR       => 'Edward Allen (ealleniii _at_ cpan _dot_ org)',
                PREREQ_PM    => {
                               'File::Spec'      => 3,
                               'Digest::MD5'     => 2,

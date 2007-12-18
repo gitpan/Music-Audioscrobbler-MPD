@@ -6,14 +6,13 @@ depend() {
 }
 
 start () {
-	ebegin "Starting Music::MPDScrobble"
+	ebegin "Starting Music::Audioscrobbler::MPD"
 	/usr/bin/musicmpdscrobble --daemonize --pidfile=/var/run/musicmpdscrobble.pid
 	eend $?
 }
 
 stop () {
-	ebegin "Stopping Music::MPDScrobble"
-	kill `cat /var/run/musicmpdscrobble.pid`
-	rm -f /var/run/musicmpdscrobble.pid
+	ebegin "Stopping Music::Audioscrobbler::MPD"
+	/usr/bin/musicmpdscrobble --kill --pidfile=/var/run/musicmpdscrobble.pid
 	eend $?
 }

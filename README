@@ -3,17 +3,6 @@ Music::Audioscrobbler::MPD version 0.02
 
 Simple Module to provide a scrobbling service for MPD.  
 
-CLIENT ID
-
-This module now has an assigned client id of "mam" and no longer uses "tst." 
-Please do not override this with "tst" in your config files unless you have
-made major changes to the code and are testing these changes.
-
-NOTE
-
-This module has CHANGED NAMES.  It is now Music::Audioscrobbler::MPD.  Old 
-versions will be REMOVED from CPAN.  Please uninstall them!
-
 INSTALLATION
 
 See the DEPENDENCIES section and install any missing dependencies.  All modules
@@ -67,6 +56,18 @@ This will allow you to read info from the file tag.
 
 The version info in the Makefile is based on what I use.  You can get 
 away with older versions in many cases.
+
+NOTE
+
+This module has CHANGED NAMES.  It is now Music::Audioscrobbler::MPD.  Old 
+versions will be REMOVED from CPAN.  Please uninstall them!
+
+
+CLIENT ID
+
+This module now has an assigned client id of "mam" and no longer uses "tst." 
+Please do not override this with "tst" in your config files unless you have
+made major changes to the code and are testing these changes.
 
 HELP
 

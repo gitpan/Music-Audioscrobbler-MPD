@@ -10,9 +10,6 @@ our $clopts = [
                 [  "daemonize" => \$cloptions{daemonize},
                    "Run as a daemon"
                 ],
-                [  "kill" => \&kill,
-                   "Kill a running daemon"
-                ],
                 [  "pidfile=s" => \$cloptions{pidfile},
                    "Specify a pid file for daemon mode"
                 ],
@@ -34,6 +31,9 @@ our $clopts = [
                 [  "longhelp" => \&longhelp,
                    "Help file with more BS."
                 ],
+                [  "kill" => \$cloptions{kill},
+                   "Kill a running daemon"
+                ],
               ];
 
 Getopt::Long::GetOptions( map { $_->[0] => $_->[1] } @{$clopts} );
@@ -50,17 +50,23 @@ if ( $options{logfile} eq "STDERR" ) {
     $options{logfile} = undef;
 }
 
+if ( $options{kill}) {
+	killdaemon();
+}
+
 if ( $options{"daemonize"} ) {
     print STDERR "Running as a daemon...\n";
     Proc::Daemon::Init;
     local *PIDFILE;
-    if ( open( PIDFILE, ">", $options{pidfile} ) ) {
+    if ( open( PIDFILE, ">", $options{"pidfile"} ) ) {
         print PIDFILE $$;
         close PIDFILE;
     }
 }
 
 my $mpds = Music::Audioscrobbler::MPD->new( \%options );
+
+$SIG{INT} = sub { $mpds->status(0, "Process killed"); exit 1 };
 
 $mpds->monitor_mpd();
 exit;
@@ -76,9 +82,9 @@ sub longhelp {
     pod2usage( -verbose => 2 );
 }
 
-sub kill {
+sub killdaemon {
     local *PIDFILE;
-    open( PIDFILE, "<", $options{pidfile} ) or die "Couldn't open pid file: $!";
+    open( PIDFILE, "<", $options{"pidfile"} ) or die "Couldn't open pid file: $!";
     my $pid = <PIDFILE>;
     close(PIDFILE);
     if ($pid) {
@@ -91,17 +97,18 @@ sub kill {
     exit 1;
 }
 
+
 __END__
 
 =head1 musicmpdscrobble
 
-musicmpdscrobble - Example perl script to submit tracks to Last.FM
+musicmpdscrobble - Perl script to submit tracks to Last.FM from mpd
 
 =head1 SYNOPSIS
 
-musicmpdscrobble --monitor --logfile=STDERR
+	musicmpdscrobble --monitor --logfile=STDERR
 
-This runs musicmpdscrobble in the foreground and prints a monitor summery.
+	This runs musicmpdscrobble in the foreground and prints a nifty little monitor summery.
 
 =head1 OPTIONS
 
@@ -188,6 +195,9 @@ after editing it.  Here is an example config file:
 	#Specify the file to store pending scrobbles in.
 		scrobble_queue	  =>  "/var/lib/musicmpdscrobble.queue",
 
+	#Automatically get missing mbid info:
+	#	get_mbid_from_mb  => 1,  	
+
 	# list of programs to run when a song start.  Accepts the following variables:
 	#
 	#   %f  filename
@@ -212,11 +222,9 @@ The major reason to install this is that it will read info from the filename and
 therefore, submit the MusicBrainz ID, if it is available via Music::Tag.  You want to submit the MusicBrainz Track ID because
 at the momement it makes you immune from last.fm spam protection and helps improve the last.fm database.
 
-=head1 DISCLAIMER
+=head1 CLIENT ID
 
-This is BETA code for testing ONLY.  The included program musicmpdscrobble is an 
-example implementation only of Music::Audioscrobbler::MPD.  A formal release requires an 
-ID from last.fm.  While testing your application, you may use the .tst ID.
+This is BETA code.  It does, however, have an official last.fm client id of "MAM."  It is not developed by the last.fm folks, and is not guranteed to even work.
 
 =head1 SEE ALSO
 
@@ -225,6 +233,7 @@ L<Music::Audioscrobbler::MPD>, L<Music::Tag>
 =head1 COPYRIGHT
 
 Copyright (c) 2007 Edward J. Allen III
+
 Some code and inspiration from L<Audio::MPD> Copyright (c) 2005 Tue Abrahamsen, Copyright (c) 2006 Nicholas J. Humfrey, Copyright (c) 2007 Jerome Quelin
 
 This library is free software; you can redistribute it and/or modify
