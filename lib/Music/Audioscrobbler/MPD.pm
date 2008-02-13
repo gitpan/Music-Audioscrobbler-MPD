@@ -1,5 +1,5 @@
 package Music::Audioscrobbler::MPD;
-our $VERSION = 0.05;
+our $VERSION = 0.07;
 
 # Copyright (c) 2007 Edward J. Allen III
 # Some code and inspiration from Audio::MPD Copyright (c) 2005 Tue Abrahamsen, Copyright (c) 2006 Nicholas J. Humfrey, Copyright (c) 2007 Jerome Quelin
@@ -92,6 +92,9 @@ sub new {
     my $self    = {};
     bless $self, $class;
     $self->options( $self->_default_options );
+	if ($options->{optionfile}) {
+		$self->options->options("optionfile", $options->{optionfile});
+	}
     $self->options->fromfile_perl( $self->options->{optionfile} );
     $self->options($options);
     $self->{scrobble_ok} = 1;
@@ -136,6 +139,7 @@ sub monitor_mpd {
                 $self->{lastscrobbled} = time;
             }
         }
+		$self->reaper();
     }
 }
 
@@ -692,6 +696,7 @@ sub run_commands {
     return unless ( ( ref $commands ) && ( scalar @{$commands} ) );
     my $pid = fork;
     if ($pid) {
+		$self->toreap($pid);
         $self->status( 4, "Forked to run commands\n" );
     }
     elsif ( defined $pid ) {
@@ -729,6 +734,32 @@ sub run_commands {
     }
 }
 
+sub toreap {
+	my $self = shift;
+	my $pid = shift;
+	unless (exists $self->{reapme}) {
+		$self->{reapme} = [];
+	}
+	push @{$self->{reapme}}, $pid;
+}
+
+sub reaper {
+	my $self = shift;
+	if (exists $self->{reapme}) {
+		my @newreap = ();
+		foreach (@{$self->{reapme}}) {
+			(waitpid $_, WNOHANG) or push @newreap, $_;
+		}
+		if (@newreap) {
+			$self->{reapme} = \@newreap;
+		}
+		else {
+			delete $self->{reapme};
+		}
+	}
+}
+
+
 ###
 #  These routines are part of Music::Audioscrobbler.  They have been integrated in for now and may be pulled out later!
 ###
@@ -751,7 +782,8 @@ sub ua {
 }
 
 sub URLEncode($) {
-    my $theURL = encode( "utf-8", $_[0] );
+    my $theURL = shift;
+	utf8::upgrade($theURL);
     $theURL =~ s/([^a-zA-Z0-9_\.])/'%' . uc(sprintf("%2.2x",ord($1)));/eg;
     return $theURL;
 }
@@ -800,7 +832,12 @@ sub info_to_hash {
     }
     elsif ( ref $info ) {
         my $ret = {};
-		if ($self->options->{get_mbid_from_mb}) {
+        $ret->{artist}   = $info->artist;
+        $ret->{title}    = $info->title;
+        $ret->{secs}     = int( $info->secs ) || 300;
+        $ret->{album}    = $info->album || "";
+        $ret->{tracknum} = $info->track || "";
+		if (($self->options->{get_mbid_from_mb}) && (not $info->mb_trackid)) {
 			$self->status(2, "Attempting to get mbid from MusicBrainz");
 			$self->get_mbid($info, {quiet => 1, verbose => 0});
 			if ($info->mb_trackid) {
@@ -810,11 +847,6 @@ sub info_to_hash {
 				$self->status(2, "Failed to get mbid from MusicBrainz");
 			}
 		}
-        $ret->{artist}   = $info->artist;
-        $ret->{title}    = $info->title;
-        $ret->{secs}     = int( $info->secs ) || 300;
-        $ret->{album}    = $info->album || "";
-        $ret->{tracknum} = $info->track || "";
         $ret->{mbid}     = $info->mb_trackid || "";
         return $ret;
     }

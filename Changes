@@ -1,3 +1,14 @@
+Release Name: 0.07
+============================
+ * Fixed Unicode issues with double encoding (thanks slothck)
+ * Stoped using URI::Encode which did NOT solve locale issues.
+
+Release Name: 0.06
+============================
+ * Configured get_mbid_from_mb to only grab if missing.
+ * Changed to using URI::Encode
+ * Fixed bug preventing log file from loading from command line.
+
 Release Name: 0.05
 ============================
  * Fixed bug with log file handles (thanks T0dK0n)

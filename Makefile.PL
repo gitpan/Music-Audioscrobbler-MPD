@@ -13,6 +13,7 @@ WriteMakefile( NAME         => "Music::Audioscrobbler::MPD",
                               'LWP::UserAgent'  => 2,
                               'Tie::Hash'       => 1,
                               'Proc::Daemon'    => .03,
+							  'URI::Escape'		=> 3.28,
                             },
                EXE_FILES => ['bin/musicmpdscrobble'],
              );
