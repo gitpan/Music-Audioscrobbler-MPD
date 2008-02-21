@@ -4,8 +4,8 @@ use Music::Audioscrobbler::MPD;
 use Getopt::Long;
 use Proc::Daemon;
 use Pod::Usage;
-our $VERSION = 0.06;
-our %cloptions = ( pidfile => "/var/run/musicmpdscrobble.pid", );
+our $VERSION = 0.08;
+our %cloptions = ();
 our $clopts = [
                 [  "daemonize" => \$cloptions{daemonize},
                    "Run as a daemon"
@@ -31,6 +31,9 @@ our $clopts = [
                 [  "longhelp" => \&longhelp,
                    "Help file with more BS."
                 ],
+                [  "version" => sub { print "musicmpdscrobble version: $VERSION\nMusic::Audioscsrobbler::MPD version: ", $Music::Audioscrobbler::MPD::VERSION, "\n"; exit 254 },
+                   "Print version number and exit."
+                ],
                 [  "kill" => \$cloptions{kill},
                    "Kill a running daemon"
                 ],
@@ -38,7 +41,7 @@ our $clopts = [
 
 Getopt::Long::GetOptions( map { $_->[0] => $_->[1] } @{$clopts} );
 
-# Need to ignore udefind options.
+# Need to ignore undefind options.
 our %options = ();
 while ( my ( $k, $v ) = each %cloptions ) {
     if ( defined $v ) {
@@ -46,25 +49,26 @@ while ( my ( $k, $v ) = each %cloptions ) {
     }
 }
 
-if ( $options{logfile} eq "STDERR" ) {
-    $options{logfile} = undef;
-}
+#if ( $options{logfile} eq "STDERR" ) {
+#    $options{logfile} = undef;
+#}
+
+my $mpds = Music::Audioscrobbler::MPD->new( \%options );
+
 
 if ( $options{kill}) {
 	killdaemon();
 }
 
 if ( $options{"daemonize"} ) {
-    print STDERR "Running as a daemon...\n";
+    print STDERR "Running as a daemon... (pid $$ > ", $mpds->options->{"pidfile"},")\n";
     Proc::Daemon::Init;
     local *PIDFILE;
-    if ( open( PIDFILE, ">", $options{"pidfile"} ) ) {
+    if ( open( PIDFILE, ">", $mpds->options->{"pidfile"} ) ) {
         print PIDFILE $$;
         close PIDFILE;
     }
 }
-
-my $mpds = Music::Audioscrobbler::MPD->new( \%options );
 
 $SIG{INT} = sub { $mpds->status(0, "Process killed"); exit 1 };
 
@@ -84,12 +88,12 @@ sub longhelp {
 
 sub killdaemon {
     local *PIDFILE;
-    open( PIDFILE, "<", $options{"pidfile"} ) or die "Couldn't open pid file: $!";
+    open( PIDFILE, "<", $mpds->options->{"pidfile"} ) or die "Couldn't open pid file: $!";
     my $pid = <PIDFILE>;
     close(PIDFILE);
     if ($pid) {
         if ( kill 2, $pid ) {
-            unlink $options{pidfile};
+            unlink $mpds->options->{pidfile};
             exit;
         }
     }
@@ -116,19 +120,20 @@ musicmpdscrobble - Perl script to submit tracks to Last.FM from mpd
 
 =item --daemonize
 
-Run as a daemon.  You should set the logfile option if you use this!  
+Run as a daemon.  You should set the logfile option if you use this! 
+Note: There is no way to set this option in the config file.
 
 =item --kill
 
-Kill running process if daemonized.  Not working well at moment...
+Kill running process if daemonized. Should work, let me know if it doesn't. 
 
 =item --pidfile
 
-Specify a pid file for daemon mode
+Specify a pid file for daemon mode.
 
 =item --logfile="/path/to/log/file"
 
-Specify a log file.  Set to STDERR for terminal output.
+Specify a log file. Set to STDERR or STDOUT for terminal output.
 
 =item --monitor
 
@@ -150,7 +155,7 @@ Print summery of command options and quit.
 
 Print this.
 
-=back 4
+=back
 
 =head1  CONFIGURATION FILE
 

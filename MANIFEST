@@ -6,5 +6,7 @@ lib/Music/Audioscrobbler/MPD.pm
 Makefile.PL
 MANIFEST
 README
-t/simple.t
+t/1-simple.t
+t/2-pod.t
+t/3-pod-coverage.t
 META.yml                                 Module meta-data (added by MakeMaker)

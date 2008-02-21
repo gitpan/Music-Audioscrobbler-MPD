@@ -1,5 +1,5 @@
 package Music::Audioscrobbler::MPD;
-our $VERSION = 0.07;
+our $VERSION = 0.08;
 
 # Copyright (c) 2007 Edward J. Allen III
 # Some code and inspiration from Audio::MPD Copyright (c) 2005 Tue Abrahamsen, Copyright (c) 2006 Nicholas J. Humfrey, Copyright (c) 2007 Jerome Quelin
@@ -33,6 +33,7 @@ All internal code is subject to change.  See L<musicmpdscrobble> for usage info.
 
 =cut
 
+use strict;
 #use Music::Audioscrobbler;
 use File::Spec;
 use Digest::MD5 qw(md5_hex);
@@ -40,6 +41,7 @@ use Encode qw(encode);
 use IO::Socket;
 use IO::File;
 use Config::Options;
+use POSIX qw(WNOHANG);
 
 sub _default_options {
     {  lastfm_username => undef,
@@ -76,9 +78,9 @@ sub _default_options {
 
 =pod
 
-=over 4
-
 =head1 METHODS
+
+=over 4
 
 =item new()
 
@@ -139,7 +141,7 @@ sub monitor_mpd {
                 $self->{lastscrobbled} = time;
             }
         }
-		$self->reaper();
+		$self->_reaper();
     }
 }
 
@@ -233,6 +235,8 @@ Options for Music::Tag
 
 =back
 
+=back
+
 =cut
 
 sub options {
@@ -249,6 +253,8 @@ sub options {
 =pod
 
 =head1 INTERNAL METHODS (for reference)
+
+=over
 
 =item mpdsock()
 
@@ -301,10 +307,7 @@ sub connect {
         $self->status( 1, "Bad response from mpd ($!)" );
         return 0;
     }
-    if ( $self->options->{mpd_password} ) {
-
-    }
-    $self->send_password if $self->options(mpd_password);
+    $self->send_password if $self->options("mpd_password");
     return 1;
 }
 
@@ -376,7 +379,7 @@ sub send_command {
 
 =pod
 
-=item send_command($command)
+=item send_password($command)
 
 send password to mpd.
 
@@ -490,9 +493,12 @@ sub logfileout {
     if ($fh) {
         $self->{logfile} = $fh;
     }
-    unless ( $self->options->{logfile} ) {
+	if ((not $self->options->{logfile}) or ($self->options->{logfile} eq "STDERR" )) {
         return \*STDERR;
-    }
+	}
+	elsif ($self->options->{logfile} eq "STDOUT" ) {
+        return \*STDOUT;
+	}
     unless ( ( exists $self->{logfile} ) && ( $self->{logfile} ) ) {
         my $fh = IO::File->new( $self->options->{logfile}, ">>" );
         unless ($fh) {
@@ -696,7 +702,7 @@ sub run_commands {
     return unless ( ( ref $commands ) && ( scalar @{$commands} ) );
     my $pid = fork;
     if ($pid) {
-		$self->toreap($pid);
+		$self->_toreap($pid);
         $self->status( 4, "Forked to run commands\n" );
     }
     elsif ( defined $pid ) {
@@ -734,7 +740,7 @@ sub run_commands {
     }
 }
 
-sub toreap {
+sub _toreap {
 	my $self = shift;
 	my $pid = shift;
 	unless (exists $self->{reapme}) {
@@ -743,7 +749,7 @@ sub toreap {
 	push @{$self->{reapme}}, $pid;
 }
 
-sub reaper {
+sub _reaper {
 	my $self = shift;
 	if (exists $self->{reapme}) {
 		my @newreap = ();
@@ -767,6 +773,12 @@ sub reaper {
 use LWP::UserAgent;
 use Tie::File;
 
+=item ua()
+
+returns or optionally sets LWP UA.
+
+=cut
+
 sub ua {
     my $self = shift;
     my $ua   = shift;
@@ -781,23 +793,29 @@ sub ua {
     return $self->{'ua'};
 }
 
-sub URLEncode($) {
+sub _URLEncode($) {
     my $theURL = shift;
 	utf8::upgrade($theURL);
     $theURL =~ s/([^a-zA-Z0-9_\.])/'%' . uc(sprintf("%2.2x",ord($1)));/eg;
     return $theURL;
 }
 
-sub makequery {
+sub _makequery {
     my $self  = shift;
     my @query = @_;
     my $q     = "";
     for ( my $i = 0 ; $i < @query ; $i += 2 ) {
         if ($q) { $q .= "&" }
-        $q .= $query[$i] . "=" . URLEncode( $query[ $i + 1 ] );
+        $q .= $query[$i] . "=" . _URLEncode( $query[ $i + 1 ] );
     }
     return $q;
 }
+
+=item info_to_hash
+
+Converts a Music::Tag object, a hash, or a filename to a simple hash for processing.
+
+=cut
 
 sub info_to_hash {
     my $self = shift;
@@ -857,12 +875,24 @@ sub info_to_hash {
     return undef;
 }
 
+=item music_tag_opts()
+
+Get or set music_tag_opts
+
+=cut
+
 sub music_tag_opts {
     my $self    = shift;
     my $options = shift || {};
     my $mt_opts = { ( %{ $self->options->{music_tag_opts} }, %{$options} ) };
     return $mt_opts;
 }
+
+=item get_info_from_file()
+
+use Music::Tag to get info from a file.
+
+=cut
 
 sub get_info_from_file {
     my $self = shift;
@@ -881,6 +911,12 @@ sub get_info_from_file {
     }
 }
 
+=item scrobble_queue()
+
+Reference to queue of files to scrobble.
+
+=cut
+
 sub scrobble_queue {
     my $self = shift;
     unless ( ( exists $self->{scrobble_queue} ) && ( $self->{scrobble_queue} ) ) {
@@ -891,6 +927,12 @@ sub scrobble_queue {
     }
     return $self->{scrobble_queue};
 }
+
+=item handshake()
+
+Perform handshake with Last.FM
+
+=cut
 
 sub handshake {
     my $self      = shift;
@@ -904,7 +946,7 @@ sub handshake {
                   't'  => $timestamp,
                   'a'  => $auth
                 );
-    my $q = $self->makequery(@query);
+    my $q = $self->_makequery(@query);
 
     $self->status( 2, "Performing Handshake with query: $q\n" );
 
@@ -949,6 +991,12 @@ sub handshake {
     }
 }
 
+=item now_playing
+
+Takes filename / Music::Tag object / Generic Hash as value and submits to last.fm
+
+=cut
+
 sub now_playing {
     my $self = shift;
     my $info = shift;
@@ -966,7 +1014,7 @@ sub now_playing {
     push @sub, "l", $h->{secs};
     push @sub, "n", $h->{track};
     push @sub, "m", $h->{mbid};
-    my $q = $self->makequery(@sub);
+    my $q = $self->_makequery(@sub);
     my $req = HTTP::Request->new( 'POST', $self->{nowplaying_url} );
 
     unless ($req) {
@@ -1000,7 +1048,8 @@ sub now_playing {
     }
 }
 
-sub do_submit {
+
+sub _do_submit {
     my $self = shift;
     unless ( $self->{session_id} && ( ( time - $self->{timestamp} ) < 3600 ) ) {
         my $h = $self->handshake();
@@ -1026,7 +1075,7 @@ sub do_submit {
                        " ", $h->{artist}, " - ", $h->{title} );
         $n++;
     }
-    my $q = $self->makequery(@sub);
+    my $q = $self->_makequery(@sub);
     my $req = HTTP::Request->new( 'POST', $self->{submission_url} );
     unless ($req) {
         die 'Could not create the submission request object';
@@ -1057,18 +1106,24 @@ sub do_submit {
     }
 }
 
-sub serialize_info {
+sub _serialize_info {
     my $self = shift;
     my ( $h, $timestamp ) = @_;
     my $ret = join( "\0", timestamp => $timestamp, %{$h} );
 }
 
-sub deserialize_info {
+sub _deserialize_info {
     my $self = shift;
     my $in   = shift;
     my %ret  = split( "\0", $in );
     return ( \%ret, $ret{timestamp} );
 }
+
+=item get_mbid()
+
+Use Music::Brainz to get mbid for a Music::Tag object.  Requires Music::Tag::MusicBrainz;
+
+=cut
 
 sub get_mbid {
 	my $self = shift;
@@ -1079,30 +1134,41 @@ sub get_mbid {
 	}
 }
 
+=item submit
+
+Takes filename / Music::Tag object / Generic Hash as value and submits to last.fm
+
+=cut
+
 sub submit {
     my $self = shift;
     foreach my $s (@_) {
         my ( $info, $timestamp ) = @{$s};
         my $h = $self->info_to_hash($info);
         if ($h) {
-            push @{ $self->scrobble_queue }, $self->serialize_info( $h, $timestamp );
+            push @{ $self->scrobble_queue }, $self->_serialize_info( $h, $timestamp );
         }
     }
     $self->process_scrobble_queue;
 }
 
-# Process up to 50 files from scrobble_queue. Recursivly calls itself if necessary / possible to empty scrobble_queue
+=item process_scrobble_queue
+
+Process up to 50 files from scrobble_queue. Recursivly calls itself if necessary / possible to empty scrobble_queue
+
+=cut
+
 sub process_scrobble_queue {
     my $self = shift;
     return -1 unless scalar @{ $self->scrobble_queue };
     my @submit = ();
     foreach ( @{ $self->scrobble_queue } ) {
-        push @submit, [ $self->deserialize_info($_) ];
+        push @submit, [ $self->_deserialize_info($_) ];
         if ( scalar @submit >= 50 ) {
             last;
         }
     }
-    my $ok = $self->do_submit(@submit);
+    my $ok = $self->_do_submit(@submit);
     if ($ok) {
         foreach (@submit) {
             shift @{ $self->scrobble_queue };
@@ -1113,6 +1179,8 @@ sub process_scrobble_queue {
     }
     return $ok;
 }
+
+=back
 
 =head1 SEE ALSO
 

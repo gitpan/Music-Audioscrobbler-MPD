@@ -3,6 +3,7 @@ WriteMakefile( NAME         => "Music::Audioscrobbler::MPD",
                VERSION_FROM => "lib/Music/Audioscrobbler/MPD.pm",
                ABSTRACT     => 'MPD Audioscrobbler Routines',
                AUTHOR       => 'Edward Allen (ealleniii _at_ cpan _dot_ org)',
+			   LICENSE		=> 'perl',
                PREREQ_PM    => {
                               'File::Spec'      => 3,
                               'Digest::MD5'     => 2,

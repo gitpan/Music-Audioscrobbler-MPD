@@ -1,3 +1,11 @@
+Release Name: 0.08
+============================
+ * musicmpdscrobble daemonizes after creating Music::Audioscrobber::MPD object
+   which allows pidfile to be set in options file (thanks K-os82)
+ * Kwalitee changes such as pod fixes, license notes, etc. 
+ * Fixed bug which prevented working with a password to mpd.
+ * Fixed bug causing reaper to block.
+
 Release Name: 0.07
 ============================
  * Fixed Unicode issues with double encoding (thanks slothck)
