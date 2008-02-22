@@ -1,5 +1,5 @@
 package Music::Audioscrobbler::MPD;
-our $VERSION = 0.08;
+our $VERSION = 0.09;
 
 # Copyright (c) 2007 Edward J. Allen III
 # Some code and inspiration from Audio::MPD Copyright (c) 2005 Tue Abrahamsen, Copyright (c) 2006 Nicholas J. Humfrey, Copyright (c) 2007 Jerome Quelin
@@ -387,7 +387,7 @@ send password to mpd.
 
 sub send_password {
     my $self = shift;
-    $self->send_command( "password ", $self->{password} );
+    $self->send_command( "password ", $self->options->("mpd_password"));
 }
 
 =pod

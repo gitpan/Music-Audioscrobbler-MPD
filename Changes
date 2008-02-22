@@ -1,3 +1,7 @@
+Release Name: 0.09
+============================
+ * Added waffelmanna's patch to fix the password submital to MPD.
+
 Release Name: 0.08
 ============================
  * musicmpdscrobble daemonizes after creating Music::Audioscrobber::MPD object
