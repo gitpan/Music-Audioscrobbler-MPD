@@ -1,19 +1,26 @@
 package Music::Audioscrobbler::MPD;
-our $VERSION = 0.09;
+our $VERSION = 0.1;
 
 # Copyright (c) 2007 Edward J. Allen III
 # Some code and inspiration from Audio::MPD Copyright (c) 2005 Tue Abrahamsen, Copyright (c) 2006 Nicholas J. Humfrey, Copyright (c) 2007 Jerome Quelin
+
 #
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the Artistic License, or
-# the GNU Public License.  Both are distributed with Perl.
+# You may distribute under the terms of either the GNU General Public
+# License or the Artistic License, as specified in the README file.
 #
 
+
+# the GNU Public License.  Both are distributed with Perl.
+
 =pod
+
+=for changes stop
 
 =head1 NAME
 
 Music::Audioscrobbler::MPD - Module providing routines to submit songs to last.fm from MPD.
+
+=for readme stop
 
 =head1 SYNOPSIS
 
@@ -21,20 +28,83 @@ Music::Audioscrobbler::MPD - Module providing routines to submit songs to last.f
 	my $mpds = Music::Audioscrobbler::MPD->new(\%options); 
 	$mpds->monitor_mpd();
 
-=head1 AUTHOR
-
-Edward Allen, ealleniii _at_ cpan _dot_ org
+=for readme continue
 
 =head1 DESCRIPTION
 
-Music::Audioscrobbler::MPD is a scrobbler for MPD.  It may one day be distributed in a package called Music::Audioscrobbler, but is independent at the momment.
+Music::Audioscrobbler::MPD is a scrobbler for MPD. As of version .1, L<Music::Audioscrobbler::Submit> is used to submit information to last.fm. 
 
-All internal code is subject to change.  See L<musicmpdscrobble> for usage info.
+All internal code is subject to change.  See L<musicmpdscrobble> for usage info.  
+
+=begin readme
+
+=head1 INSTALLATION
+
+To install this module type the following:
+
+   perl Makefile.PL
+   make
+   make test
+   make install
+
+=head1 CONFIGURATION
+
+There is a sample config file under examples.  A sample init file that I use for 
+gentoo linux is there as well.
+
+=head1 USE
+
+Edit the sample config file and copy to /etc/musicmpdscrobble.conf or ~/.musicmpdscrobble.conf
+
+Test your configuration by issue the command
+
+    musicmpdscrobble --logfile=STDERR --monitor
+
+and playing some music.  
+
+If it works, then the command
+
+    musicmpdscrobble --daemonize 
+
+will run musicmpdscrobble as a daemon.  Please see examples for a sample init script.  If you make an init script
+for your distribution, please send it to me!
+
+=head1 DEPENDENCIES
+
+This module requires these other modules and libraries:
+
+    Music::Audioscrobbler::Submit
+    File::Spec
+    Digest::MD5
+    Encode
+    IO::Socket
+    IO::File
+    Config::Options
+
+I strongly encourage you to also install my module
+
+    Music::Tag
+
+This will allow you to read info from the file tag (such as the MusicBrainz ID).
+
+The version info in the Makefile is based on what I use.  You can get 
+away with older versions in many cases.
+
+=end readme
+
+=head1 MORE HELP
+
+Please see the documentation for L<musicmpdscrobble> which is available from 
+
+    musicmpdscrobble --longhelp
+
+=for readme stop
 
 =cut
 
 use strict;
-#use Music::Audioscrobbler;
+use warnings;
+use Music::Audioscrobbler::Submit;
 use File::Spec;
 use Digest::MD5 qw(md5_hex);
 use Encode qw(encode);
@@ -43,14 +113,12 @@ use IO::File;
 use Config::Options;
 use POSIX qw(WNOHANG);
 
+
 sub _default_options {
     {  lastfm_username => undef,
        lastfm_password => undef,
        mdb_opts        => {},
-       musicdb         => 0,
        musictag        => 0,
-       quiet           => 0,
-       ANSIColor       => 0,
        verbose         => 1,
        monitor         => 1,
        daemonize       => 0,
@@ -75,8 +143,6 @@ sub _default_options {
                          },
     };
 }
-
-=pod
 
 =head1 METHODS
 
@@ -115,8 +181,6 @@ sub new {
     return $self;
 }
 
-=pod
-
 =item monitor_mpd()
 
 Starts the main loop. 
@@ -137,15 +201,13 @@ sub monitor_mpd {
         }
         unless ( $self->{scrobble_ok} ) {
             if ( ( time - $self->{lastscrobbled} ) > 600 ) {
-                $self->{scrobble_ok}   = $self->process_scrobble_queue();
+                $self->{scrobble_ok}   = $self->mas->process_scrobble_queue();
                 $self->{lastscrobbled} = time;
             }
         }
 		$self->_reaper();
     }
 }
-
-=pod
 
 =item options()
 
@@ -191,13 +253,13 @@ mpd password
 
 =item verbose				
 
-Set verbosity level (1 throuch 4)
+Set verbosity level (1 through 4)
 
 =item logfile				
 
 File to output loginfo to
 
-=item scrobblequue		
+=item scrobblequeue		
 
 Path to file to queue info to
 
@@ -225,9 +287,6 @@ True if monitor should be turned on
 
 True if you want to use Music::Tag to get info from file
 
-=item musicdb				
-
-True to use MusicDB plugin for Music::Tag
 
 =item music_tag_opts		
 
@@ -250,8 +309,6 @@ sub options {
     }
 }
 
-=pod
-
 =head1 INTERNAL METHODS (for reference)
 
 =over
@@ -273,8 +330,6 @@ sub mpdsock {
     }
     return $self->{mpdsock};
 }
-
-=pod
 
 =item connect()
 
@@ -311,8 +366,6 @@ sub connect {
     return 1;
 }
 
-=pod
-
 =item is_connected()
 
 Return true if connected to mpd.
@@ -327,8 +380,6 @@ sub is_connected {
     }
     return undef;
 }
-
-=pod
 
 =item process_feedback
 
@@ -361,11 +412,9 @@ sub process_feedback {
     return @output;
 }
 
-=pod
-
 =item send_command($command)
 
-send a commnd to mpd.
+send a command to mpd.
 
 =cut
 
@@ -377,8 +426,6 @@ sub send_command {
     }
 }
 
-=pod
-
 =item send_password($command)
 
 send password to mpd.
@@ -389,8 +436,6 @@ sub send_password {
     my $self = shift;
     $self->send_command( "password ", $self->options->("mpd_password"));
 }
-
-=pod
 
 =item get_info($command)
 
@@ -409,8 +454,6 @@ sub get_info {
     }
     return $ret;
 }
-
-=pod
 
 =item get_status($command)
 
@@ -440,8 +483,6 @@ sub get_status {
     $self->get_info("status");
 }
 
-=pod
-
 =item get_current_song_info($command)
 
 get_status command. Returns hashref with:
@@ -462,8 +503,6 @@ sub get_current_song_info {
     $self->get_info("currentsong");
 }
 
-=pod
-
 =item status($level, @message)
 
 Print to log.
@@ -478,8 +517,6 @@ sub status {
         print $out scalar localtime(), " ", @_, "\n";
     }
 }
-
-=pod
 
 =item logfileout 
 
@@ -511,16 +548,25 @@ sub logfileout {
     return $self->{logfile};
 }
 
-#sub mas {
-#	my $self = shift;
-#	unless ((exists $self->{mas}) && (ref $self->{mas})) {
-#		$self->{mas} = Music::Audioscrobbler->new($self->options);
-#		$self->{mas}->logfileout($self->logfileout);
-#	}
-#	return $self->{mas};
-#}
+=item mas()
 
-=pod
+Reference to underlying Music::Audioscrobbler::Submit object. If passed a Music::Audioscrobbler::Submit object, will
+use that one instead.
+
+=cut
+
+sub mas {
+	my $self = shift;
+    my $new = shift;
+    if ($new) {
+        $self->{mas} = $new;
+    }
+	unless ((exists $self->{mas}) && (ref $self->{mas})) {
+		$self->{mas} = Music::Audioscrobbler::Submit->new($self->options);
+		$self->{mas}->logfileout($self->logfileout);
+	}
+	return $self->{mas};
+}
 
 =item new_info($cinfo)
 
@@ -540,9 +586,10 @@ sub new_info {
           File::Spec->rel2abs( $self->{current_song}, $self->options->{music_directory} );
     }
     else {
+        $self->status(1, "File not found: ", File::Spec->rel2abs( $self->{current_song}, $self->options->{music_directory} ));
         $self->{current_file} = 0;
     }
-    $self->{info} = $self->info_to_hash(
+    $self->{info} = $self->mas->info_to_hash(
                                          { album    => $cinfo->{Album},
                                            artist   => $cinfo->{Artist},
                                            title    => $cinfo->{Title},
@@ -560,10 +607,8 @@ sub new_info {
     $self->{last_running_time} = undef;
     $self->{state}             = "";
     $self->{started_at}        = time;
-    $self->status( 1, "New Song: ", $self->{current_id}, " - ", $self->{current_file} );
+    $self->status( 1, "New Song: ", $self->{current_id}, " - ", ($self->{current_file} ? $self->{current_file} : "Unknown File: $self->{current_song}")  );
 }
-
-=pod
 
 =item song_change($cinfo)
 
@@ -591,15 +636,13 @@ sub song_change {
     $self->new_info($cinfo);
     if ( ( defined $self->{current_file} ) && ( $cinfo->{Time} ) && ( $state eq "play" ) ) {
         $self->status( 4, "Announcing start of play for: ", $self->{current_file} );
-        $self->now_playing( $self->{info} );
+        $self->mas->now_playing( $self->{info} );
         $self->run_commands( $self->options->{runonstart} );
     }
     else {
         $self->status( 4, "Not announcing start of play for: ", $self->{current_file} );
     }
 }
-
-=pod
 
 =item update_info()
 
@@ -654,7 +697,6 @@ sub update_info {
     }
 }
 
-=pod
 
 =item monitor()
 
@@ -668,7 +710,6 @@ sub monitor {
       $self->{running_time};
 }
 
-=pod
 
 =item scrobble()
 
@@ -680,7 +721,7 @@ sub scrobble {
     my $self = shift;
     if ( defined $self->{current_file} ) {
         $self->status( 2, "Adding ", $self->{current_file}, " to scrobble queue" );
-        $self->{scrobble_ok} = $self->submit( [ $self->{info}, $self->{started_at} ] );
+        $self->{scrobble_ok} = $self->mas->submit( [ $self->{info}, $self->{started_at} ] );
         $self->{lastscrobbled} = time;
     }
     else {
@@ -688,7 +729,6 @@ sub scrobble {
     }
 }
 
-=pod
 
 =item run_commands()
 
@@ -766,425 +806,203 @@ sub _reaper {
 }
 
 
-###
-#  These routines are part of Music::Audioscrobbler.  They have been integrated in for now and may be pulled out later!
-###
-
-use LWP::UserAgent;
-use Tie::File;
-
-=item ua()
-
-returns or optionally sets LWP UA.
-
-=cut
-
-sub ua {
-    my $self = shift;
-    my $ua   = shift;
-    unless ( ( exists $self->{ua} ) && ( ref $self->{ua} ) ) {
-        $self->{ua} = LWP::UserAgent->new();
-        $self->{ua}->agent( 'scrobbler-helper/1.0 ' . $self->{ua}->_agent() );
-        $self->{ua}->timeout( $self->options->{timeout} );
-    }
-    unless ( $self->{'ua'} ) {
-        die 'Could not create an LWP UserAgent object?!?';
-    }
-    return $self->{'ua'};
-}
-
-sub _URLEncode($) {
-    my $theURL = shift;
-	utf8::upgrade($theURL);
-    $theURL =~ s/([^a-zA-Z0-9_\.])/'%' . uc(sprintf("%2.2x",ord($1)));/eg;
-    return $theURL;
-}
-
-sub _makequery {
-    my $self  = shift;
-    my @query = @_;
-    my $q     = "";
-    for ( my $i = 0 ; $i < @query ; $i += 2 ) {
-        if ($q) { $q .= "&" }
-        $q .= $query[$i] . "=" . _URLEncode( $query[ $i + 1 ] );
-    }
-    return $q;
-}
-
-=item info_to_hash
-
-Converts a Music::Tag object, a hash, or a filename to a simple hash for processing.
-
-=cut
-
-sub info_to_hash {
-    my $self = shift;
-    my $info = shift;
-    if ( ref $info eq "HASH" ) {
-        if ( exists $info->{filename} ) {
-            eval {
-                my $extra = $self->get_info_from_file( $info->{filename} );
-                while ( my ( $k, $v ) = each %{$extra} ) {
-                    next
-                      if ( ( $k eq "secs" ) && ( exists $info->{secs} ) && ( $info->{secs} > 30 ) );
-                    $info->{$k} = $v;
-                }
-            };    # eval'd to protect from a bad Music::Tag plugin causing trouble.
-            if ($@) { $self->status( 0, "Error with Music::Tag: ", $@ ) }
-        }
-        foreach (qw(artist title secs album track mbid tracknum)) {
-            unless ( exists $info->{$_} ) {
-                $info->{$_} = "";
-            }
-            if ( exists $info->{mb_trackid} ) {
-                $info->{mbid} = $info->{mb_trackid};
-            }
-            if ( exists $info->{length} ) {
-                $info->{secs} = $info->{length};
-            }
-            unless ( $info->{secs} ) {
-                $info->{secs} = 300;
-            }
-        }
-        return $info;
-    }
-    elsif ( ref $info ) {
-        my $ret = {};
-        $ret->{artist}   = $info->artist;
-        $ret->{title}    = $info->title;
-        $ret->{secs}     = int( $info->secs ) || 300;
-        $ret->{album}    = $info->album || "";
-        $ret->{tracknum} = $info->track || "";
-		if (($self->options->{get_mbid_from_mb}) && (not $info->mb_trackid)) {
-			$self->status(2, "Attempting to get mbid from MusicBrainz");
-			$self->get_mbid($info, {quiet => 1, verbose => 0});
-			if ($info->mb_trackid) {
-				$self->status(2, "Got mbid: ", $info->mb_trackid);
-			}
-			else {
-				$self->status(2, "Failed to get mbid from MusicBrainz");
-			}
-		}
-        $ret->{mbid}     = $info->mb_trackid || "";
-        return $ret;
-    }
-    elsif ( -f $info ) {
-        return $self->get_info_from_file($info);
-    }
-    $self->status( 0, "Hash or Music::Tag object or filename required!" );
-    return undef;
-}
-
-=item music_tag_opts()
-
-Get or set music_tag_opts
-
-=cut
-
-sub music_tag_opts {
-    my $self    = shift;
-    my $options = shift || {};
-    my $mt_opts = { ( %{ $self->options->{music_tag_opts} }, %{$options} ) };
-    return $mt_opts;
-}
-
-=item get_info_from_file()
-
-use Music::Tag to get info from a file.
-
-=cut
-
-sub get_info_from_file {
-    my $self = shift;
-    my $file = shift;
-    return unless ( $self->options->{musictag} );
-    require Music::Tag;
-    $self->status( 3, "Filename $file detected" );
-    my $minfo = Music::Tag->new( $file, $self->music_tag_opts() );
-    if ($minfo) {
-        if ( $self->options->{musicdb} ) {
-            $minfo->add_plugin("MusicDB");
-        }
-        $minfo->get_tag;
-        $self->status( 4, "Filename $file is really " . $minfo->title );
-        return $self->info_to_hash($minfo);
-    }
-}
-
-=item scrobble_queue()
-
-Reference to queue of files to scrobble.
-
-=cut
-
-sub scrobble_queue {
-    my $self = shift;
-    unless ( ( exists $self->{scrobble_queue} ) && ( $self->{scrobble_queue} ) ) {
-        my @q;
-        tie @q, 'Tie::File', $self->options("scrobble_queue")
-          or die "Couldn't tie array to scrobble_queue: " . $self->options("scrobble_queue");
-        $self->{scrobble_queue} = \@q;
-    }
-    return $self->{scrobble_queue};
-}
-
-=item handshake()
-
-Perform handshake with Last.FM
-
-=cut
-
-sub handshake {
-    my $self      = shift;
-    my $timestamp = time;
-    my $auth      = md5_hex( $self->options->{lastfm_md5password} . $timestamp );
-    my @query = ( 'hs' => "true",
-                  'p'  => "1.2",
-                  'c'  => $self->options->{lastfm_client_id},
-                  'v'  => $self->options->{lastfm_client_version},
-                  'u'  => $self->options->{lastfm_username},
-                  't'  => $timestamp,
-                  'a'  => $auth
-                );
-    my $q = $self->_makequery(@query);
-
-    $self->status( 2, "Performing Handshake with query: $q\n" );
-
-    my $req = new HTTP::Request( 'GET', "http://post.audioscrobbler.com/?$q" );
-    unless ($req) {
-        die 'Could not create the handshake request object';
-    }
-    my $resp = $self->ua->request($req);
-    $self->status( 2, "Response to handshake is: ",
-                   $resp->content, " and success is ",
-                   $resp->status_line );
-    unless ( $resp->is_success ) {
-        $self->status( 0, "Response failed: ", $resp->status_line );
-        return 0;
-    }
-
-    my @lines = split /[\r\n]+/, $resp->content;
-
-    my $status = shift @lines;
-    if ( $status eq "OK" ) {
-        $self->{session_id}     = shift @lines;
-        $self->{nowplaying_url} = shift @lines;
-        $self->{submission_url} = shift @lines;
-        $self->{timestamp}      = $timestamp;
-        return $self->{session_id};
-    }
-    elsif ( $status eq "FAILED" ) {
-        $self->status( 0, "Temporary Failure: ", @lines );
-        return 0;
-    }
-    elsif ( $status eq "BADAUTH" ) {
-        $self->status( 0, "Bad authorization code: ", @lines );
-        return undef;
-    }
-    elsif ( $status eq "BADTIME" ) {
-        $self->status( 0, "Bad time stamp: ", @lines );
-        return undef;
-    }
-    else {
-        $self->status( 0, "Unknown Error: ", $status, " ", @lines );
-        return undef;
-    }
-}
-
-=item now_playing
-
-Takes filename / Music::Tag object / Generic Hash as value and submits to last.fm
-
-=cut
-
-sub now_playing {
-    my $self = shift;
-    my $info = shift;
-    my $h    = $self->info_to_hash($info);
-    return unless ( defined $h );
-    unless ( $self->{session_id} && ( ( time - $self->{timestamp} ) < 3600 ) ) {
-        my $h = $self->handshake();
-        unless ($h) { return $h; }
-    }
-    my @sub = ();
-    push @sub, "s", $self->{session_id};
-    push @sub, "a", $h->{artist};
-    push @sub, "t", $h->{title};
-    push @sub, "b", $h->{album};
-    push @sub, "l", $h->{secs};
-    push @sub, "n", $h->{track};
-    push @sub, "m", $h->{mbid};
-    my $q = $self->_makequery(@sub);
-    my $req = HTTP::Request->new( 'POST', $self->{nowplaying_url} );
-
-    unless ($req) {
-        die 'Could not create the submission request object';
-    }
-    $self->status( 2,
-                   "Notifying nowplaying info to ",
-                   $self->{nowplaying_url},
-                   " with query: $q\n" );
-    $req->content_type('application/x-www-form-urlencoded; charset="UTF-8"');
-    $req->content($q);
-    my $resp = $self->ua->request($req);
-    $self->status( 2, "Response to submission is: ",
-                   $resp->content, " and success is ",
-                   $resp->is_success );
-    my @lines = split /[\r\n]+/, $resp->content;
-    my $status = shift @lines;
-
-    if ( $status eq "OK" ) {
-        $self->status( 1, "Notification OK" );
-        return 1;
-    }
-    elsif ( $status eq "BADSESSION" ) {
-        $self->status( 0, "Bad session code: ", @lines );
-        $self->{session_id} = 0;
-        return 0;
-    }
-    else {
-        $self->status( 0, "Unknown Error: ", $status, " ", @lines );
-        return undef;
-    }
-}
-
-
-sub _do_submit {
-    my $self = shift;
-    unless ( $self->{session_id} && ( ( time - $self->{timestamp} ) < 3600 ) ) {
-        my $h = $self->handshake();
-        unless ($h) { return $h; }
-    }
-    my @sub = ();
-    push @sub, "s", $self->{session_id};
-    my $n = 0;
-    foreach my $s (@_) {
-        my ( $info, $timestamp ) = @{$s};
-        my $h = $self->info_to_hash($info);
-        next unless ( defined $h );
-        push @sub, "a[$n]", $h->{artist};
-        push @sub, "t[$n]", $h->{title};
-        push @sub, "i[$n]", $timestamp;
-        push @sub, "o[$n]", "P";            # Nothing but P supported yet.
-        push @sub, "r[$n]", "";             # Not supported yet.
-        push @sub, "l[$n]", $h->{secs};
-        push @sub, "b[$n]", $h->{album};
-        push @sub, "n[$n]", $h->{track};
-        push @sub, "m[$n]", $h->{mbid};
-        $self->status( 1, "Submitting: ", scalar localtime($timestamp),
-                       " ", $h->{artist}, " - ", $h->{title} );
-        $n++;
-    }
-    my $q = $self->_makequery(@sub);
-    my $req = HTTP::Request->new( 'POST', $self->{submission_url} );
-    unless ($req) {
-        die 'Could not create the submission request object';
-    }
-    $self->status( 2, "Performing submission to ", $self->{submission_url}, " with query: $q\n" );
-    $req->content_type('application/x-www-form-urlencoded; charset="UTF-8"');
-    $req->content($q);
-    my $resp = $self->ua->request($req);
-    $self->status( 2, "Response to submission is: ",
-                   $resp->content, " and success is ",
-                   $resp->is_success );
-
-    my @lines = split /[\r\n]+/, $resp->content;
-
-    my $status = shift @lines;
-    if ( $status eq "OK" ) {
-        $self->status( 1, "Submission OK" );
-        return 1;
-    }
-    elsif ( $status eq "BADSESSION" ) {
-        $self->status( 0, "Bad session code: ", @lines );
-        $self->{session_id} = 0;
-        return 0;
-    }
-    else {
-        $self->status( 0, "Unknown Error: ", $status, " ", @lines );
-        return undef;
-    }
-}
-
-sub _serialize_info {
-    my $self = shift;
-    my ( $h, $timestamp ) = @_;
-    my $ret = join( "\0", timestamp => $timestamp, %{$h} );
-}
-
-sub _deserialize_info {
-    my $self = shift;
-    my $in   = shift;
-    my %ret  = split( "\0", $in );
-    return ( \%ret, $ret{timestamp} );
-}
-
-=item get_mbid()
-
-Use Music::Brainz to get mbid for a Music::Tag object.  Requires Music::Tag::MusicBrainz;
-
-=cut
-
-sub get_mbid {
-	my $self = shift;
-	my $info = shift;
-	unless ($info->mb_trackid) {
-		my $mb = $info->add_plugin("MusicBrainz");
-		$mb->get_tag();
-	}
-}
-
-=item submit
-
-Takes filename / Music::Tag object / Generic Hash as value and submits to last.fm
-
-=cut
-
-sub submit {
-    my $self = shift;
-    foreach my $s (@_) {
-        my ( $info, $timestamp ) = @{$s};
-        my $h = $self->info_to_hash($info);
-        if ($h) {
-            push @{ $self->scrobble_queue }, $self->_serialize_info( $h, $timestamp );
-        }
-    }
-    $self->process_scrobble_queue;
-}
-
-=item process_scrobble_queue
-
-Process up to 50 files from scrobble_queue. Recursivly calls itself if necessary / possible to empty scrobble_queue
-
-=cut
-
-sub process_scrobble_queue {
-    my $self = shift;
-    return -1 unless scalar @{ $self->scrobble_queue };
-    my @submit = ();
-    foreach ( @{ $self->scrobble_queue } ) {
-        push @submit, [ $self->_deserialize_info($_) ];
-        if ( scalar @submit >= 50 ) {
-            last;
-        }
-    }
-    my $ok = $self->_do_submit(@submit);
-    if ($ok) {
-        foreach (@submit) {
-            shift @{ $self->scrobble_queue };
-        }
-        if ( scalar @{ $self->scrobble_queue } ) {
-            $self->process_scrobble_queue;
-        }
-    }
-    return $ok;
-}
-
 =back
 
 =head1 SEE ALSO
 
-L<musicmpdscrobble>, L<Music::Tag>
+L<musicmpdscrobble>, L<Music::Audioscrobbler::Submit>, L<Music::Tag>
+
+=for changes continue
+
+=head1 CHANGES
+
+=over 4
+
+=item Release Name: 0.1
+
+=over 4
+
+=item *
+
+Split off all scrobbling code to Music::Audioscrobbler::Submit
+
+=item *
+
+Added an error message if file is not found.
+
+=item *
+
+Added use warnings for better debugging.
+
+=item *
+
+Started using Pod::Readme for README and CHANGES
+
+=back
+
+=begin changes
+
+=item Release Name: 0.09
+
+=over 4
+
+=item *
+
+Added waffelmanna's patch to fix the password submital to MPD.
+
+=back
+
+=item Release Name: 0.08
+
+=over 4
+
+=item *
+
+musicmpdscrobble daemonizes after creating Music::Audioscrobber::MPD object which allows pidfile to be set in options file (thanks K-os82)
+
+=item *
+
+Kwalitee changes such as pod fixes, license notes, etc. 
+
+=item *
+
+Fixed bug which prevented working with a password to mpd.
+
+=item *
+
+Fixed bug causing reaper to block.
+
+=back
+
+=item Release Name: 0.07
+
+=over 4
+
+=item *
+
+Fixed Unicode issues with double encoding (thanks slothck)
+
+=item *
+
+Stoped using URI::Encode which did NOT solve locale issues.
+
+=back
+
+=item Release Name: 0.06
+
+=over 4
+
+=item *
+
+Configured get_mbid_from_mb to only grab if missing.
+
+=item *
+
+Changed to using URI::Encode
+
+=item *
+
+Fixed bug preventing log file from loading from command line.
+
+=back
+
+=item Release Name: 0.05
+
+=over 4
+
+=item *
+
+Fixed bug with log file handles (thanks T0dK0n)
+
+=item *
+
+Fixed bug caused when music_directory not set  (thanks T0dK0n)
+
+=item *
+
+Revised Documentation Slightly
+
+=item *
+
+Fixed bug in kill function for musicmpdscrobble
+
+=item *
+
+Added option get_mbid_from_mb to get missing mbids using Music::Tag::MusicBrainz
+
+=back
+
+=item Release Name: 0.04
+
+=over 4
+
+=item *
+
+Have been assigned Client ID.  If you set this in your configs, please remove.
+
+=back
+
+=item Release Name: 0.03
+
+=over 4
+
+=item *
+
+Name change for module.  Is now Music::Audioscrobbler::MPD.  Uninstall old version to facilitate change!
+
+=item *
+
+Repeating a song isn't a skip anymore (or rather skipping back a scrobblable distance is not a skip)
+
+=item *
+
+Only submits a song <30 seconds long if it has an mbid.
+
+=item *
+
+Very basic test script for sanity.
+
+=back
+
+=item Release Name: 0.02
+
+=over 4
+
+=item *
+
+Fixed bug caused my Music::Tag returning non-integer values for "secs" (thanks tunefish)
+
+=item *
+
+Along same lines, configure to not use Music::Tag secs values, but trust MPD
+
+=back
+
+=item Release Name: 0.01
+
+=over 4
+
+=item *
+
+Initial Release
+
+=item *
+
+Basic routines for scrobbling MPD.  Code from Music::Audioscrobbler merged for now.
+
+=back
+
+=end changes
+
+=back
+
+=for changes stop
+
+=for readme continue
+
+=head1 AUTHOR
+
+Edward Allen, ealleniii _at_ cpan _dot_ org
 
 =head1 COPYRIGHT
 
@@ -1193,9 +1011,30 @@ Copyright (c) 2007 Edward J. Allen III
 Some code and inspiration from L<Audio::MPD> 
 Copyright (c) 2005 Tue Abrahamsen, Copyright (c) 2006 Nicholas J. Humfrey, Copyright (c) 2007 Jerome Quelin
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.8.7 or,
-at your option, any later version of Perl 5 you may have available.
+=head1 LICENSE
+
+This program is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either:
+
+a) the GNU General Public License as published by the Free
+Software Foundation; either version 1, or (at your option) any
+later version, or
+
+b) the "Artistic License" which comes with Perl.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See either
+the GNU General Public License or the Artistic License for more details.
+
+You should have received a copy of the Artistic License with this
+Kit, in the file named "Artistic".  If not, I'll be glad to provide one.
+
+You should also have received a copy of the GNU General Public License
+along with this program in the file named "Copying". If not, write to the
+Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+Boston, MA 02110-1301, USA or visit their web page on the Internet at
+http://www.gnu.org/copyleft/gpl.html.
 
 
 =cut

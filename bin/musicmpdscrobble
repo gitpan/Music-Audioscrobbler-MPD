@@ -226,11 +226,11 @@ The music tag module is framework for reading tag files.  It requires several mo
 
 The major reason to install this is that it will read info from the filename and not just from the MPD database.  You can,
 therefore, submit the MusicBrainz ID, if it is available via Music::Tag.  You want to submit the MusicBrainz Track ID because
-at the momement it makes you immune from last.fm spam protection and helps improve the last.fm database.
+at it (currently) makes you immune from last.fm spam protection and helps improve the last.fm database.
 
 =head1 CLIENT ID
 
-This is BETA code.  It does, however, have an official last.fm client id of "MAM."  It is not developed by the last.fm folks, and is not guranteed to even work.
+This is BETA code.  It does, however, have an official last.fm client id of "MAM."  It is not developed by the last.fm folks, and is not guaranteed to even work.
 
 =head1 SEE ALSO
 
@@ -242,8 +242,30 @@ Copyright (c) 2007 Edward J. Allen III
 
 Some code and inspiration from L<Audio::MPD> Copyright (c) 2005 Tue Abrahamsen, Copyright (c) 2006 Nicholas J. Humfrey, Copyright (c) 2007 Jerome Quelin
 
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.8.7 or,
-at your option, any later version of Perl 5 you may have available.
+=head1 LICENSE
+
+This program is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either:
+
+a) the GNU General Public License as published by the Free
+Software Foundation; either version 1, or (at your option) any
+later version, or
+
+b) the "Artistic License" which comes with Perl.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See either
+the GNU General Public License or the Artistic License for more details.
+
+You should have received a copy of the Artistic License with this
+Kit, in the file named "Artistic".  If not, I'll be glad to provide one.
+
+You should also have received a copy of the GNU General Public License
+along with this program in the file named "Copying". If not, write to the
+Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+Boston, MA 02110-1301, USA or visit their web page on the Internet at
+http://www.gnu.org/copyleft/gpl.html.
+
 
 =cut

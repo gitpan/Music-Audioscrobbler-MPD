@@ -1,11 +1,11 @@
+lib/Music/Audioscrobbler/MPD.pm
 bin/musicmpdscrobble
-Changes
 examples/gentoo_init_script
 examples/musicmpdscrobble_example.conf
-lib/Music/Audioscrobbler/MPD.pm
 Makefile.PL
 MANIFEST
 README
+CHANGES
 t/1-simple.t
 t/2-pod.t
 t/3-pod-coverage.t
