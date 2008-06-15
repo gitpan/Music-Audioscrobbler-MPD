@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Music-Audioscrobbler-MPD
-version:             0.1
+version:             0.11
 abstract:            MPD Audioscrobbler Routines
 license:             perl
 author:              
@@ -14,7 +14,7 @@ requires:
     File::Spec:                    3
     IO::File:                      1
     IO::Socket:                    1
-    Music::Audioscrobbler::Submit: 0.01
+    Music::Audioscrobbler::Submit: 0.03
     Proc::Daemon:                  0.03
 meta-spec:
     url:     http://module-build.sourceforge.net/META-spec-v1.3.html

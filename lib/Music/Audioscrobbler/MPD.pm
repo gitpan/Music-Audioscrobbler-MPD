@@ -1,5 +1,5 @@
 package Music::Audioscrobbler::MPD;
-our $VERSION = 0.1;
+our $VERSION = 0.11;
 
 # Copyright (c) 2007 Edward J. Allen III
 # Some code and inspiration from Audio::MPD Copyright (c) 2005 Tue Abrahamsen, Copyright (c) 2006 Nicholas J. Humfrey, Copyright (c) 2007 Jerome Quelin
@@ -115,14 +115,15 @@ use POSIX qw(WNOHANG);
 
 
 sub _default_options {
-    {  lastfm_username => undef,
-       lastfm_password => undef,
-       mdb_opts        => {},
-       musictag        => 0,
-       verbose         => 1,
-       monitor         => 1,
-       daemonize       => 0,
-       timeout         => 15,      # Set low to prevent missing a scrobble.  Rather retry submit.
+    {  lastfm_username    => undef,
+       lastfm_password    => undef,
+       mdb_opts           => {},
+       musictag           => 0,
+       musictag_overwrite => 0,
+       verbose            => 1,
+       monitor            => 1,
+       daemonize          => 0,
+       timeout            => 15,      # Set low to prevent missing a scrobble.  Rather retry submit.
        pidfile            => "/var/run/musicmpdscrobble.pid",
        logfile            => undef,
        default_cache_time => 86400,
@@ -286,6 +287,10 @@ True if monitor should be turned on
 =item musictag			
 
 True if you want to use Music::Tag to get info from file
+
+=item musictag_overwrite			
+
+True if you want to Music::Tag info to override file info
 
 
 =item music_tag_opts		
@@ -589,14 +594,15 @@ sub new_info {
         $self->status(1, "File not found: ", File::Spec->rel2abs( $self->{current_song}, $self->options->{music_directory} ));
         $self->{current_file} = 0;
     }
-    $self->{info} = $self->mas->info_to_hash(
-                                         { album    => $cinfo->{Album},
+    my $h = { album    => $cinfo->{Album},
                                            artist   => $cinfo->{Artist},
                                            title    => $cinfo->{Title},
                                            secs     => $cinfo->{Time},
-                                           filename => $self->{current_file},
-                                         }
-                                       );
+                                         };
+    if ($self->options->{music_tag}) {
+        $h->{filename} = $self->{current_file};
+    }
+    $self->{info} = $self->mas->info_to_hash( $h );
 
     #Prevent excessive calls to info_to_hash
     delete $self->{info}->{filename};
@@ -655,7 +661,10 @@ sub update_info {
     my $status = $self->get_status;
     my $cinfo  = $self->get_current_song_info();
     $self->{state} = $status->{state};
-    my ( $so_far, $total ) = split( /:/, $status->{'time'} );
+    my ( $so_far, $total ) = (0,0);
+    if ($status->{'time'}) {
+        ( $so_far, $total ) = split( /:/, $status->{'time'} );
+    }
     my $time = time;
     if ( $self->{state} eq "play" ) {
         unless ( $cinfo->{Id} eq $self->{current_id} ) {
@@ -706,8 +715,8 @@ print current status to STDERR
 
 sub monitor {
     my $self = shift;
-    printf STDERR "%5s ID: %4s  TIME: %5s             \r", $self->{state}, $self->{current_id},
-      $self->{running_time};
+    printf STDERR "%5s ID: %4s  TIME: %5s             \r", $self->{state} ? $self->{state} : "", $self->{current_id} ? $self->{current_id} : "",
+      $self->{running_time} ? $self->{running_time} : "";
 }
 
 
@@ -815,6 +824,21 @@ L<musicmpdscrobble>, L<Music::Audioscrobbler::Submit>, L<Music::Tag>
 =for changes continue
 
 =head1 CHANGES
+
+=over 4
+
+=item Release Name: 0.11
+
+=over 4
+
+=item *
+
+Added musictag_overwrite option. This is false by default. It is a workaround for problems with Music::Tag and unicode.  Setting this to
+true allows Music::Tag info to overwrite info from MPD.  Do not set this to true until Music::Tag returns proper unicode consistantly.
+
+=back
+
+=back
 
 =over 4
 

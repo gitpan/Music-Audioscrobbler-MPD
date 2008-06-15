@@ -1,4 +1,11 @@
 CHANGES
+    Release Name: 0.11
+        *   Added musictag_overwrite option. This is false by default. It is
+            a workaround for problems with Music::Tag and unicode. Setting
+            this to true allows Music::Tag info to overwrite info from MPD.
+            Do not set this to true until Music::Tag returns proper unicode
+            consistantly.
+
     Release Name: 0.1
         *   Split off all scrobbling code to Music::Audioscrobbler::Submit
 
