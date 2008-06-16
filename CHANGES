@@ -1,4 +1,8 @@
 CHANGES
+    Release Name: 0.12
+        *   Fixed bug that sometimes prevented Music::Tag from working at
+            all. Added some level 4 debug messages.
+
     Release Name: 0.11
         *   Added musictag_overwrite option. This is false by default. It is
             a workaround for problems with Music::Tag and unicode. Setting

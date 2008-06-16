@@ -1,5 +1,5 @@
 package Music::Audioscrobbler::MPD;
-our $VERSION = 0.11;
+our $VERSION = 0.12;
 
 # Copyright (c) 2007 Edward J. Allen III
 # Some code and inspiration from Audio::MPD Copyright (c) 2005 Tue Abrahamsen, Copyright (c) 2006 Nicholas J. Humfrey, Copyright (c) 2007 Jerome Quelin
@@ -599,7 +599,7 @@ sub new_info {
                                            title    => $cinfo->{Title},
                                            secs     => $cinfo->{Time},
                                          };
-    if ($self->options->{music_tag}) {
+    if ($self->options->{musictag}) {
         $h->{filename} = $self->{current_file};
     }
     $self->{info} = $self->mas->info_to_hash( $h );
@@ -824,6 +824,21 @@ L<musicmpdscrobble>, L<Music::Audioscrobbler::Submit>, L<Music::Tag>
 =for changes continue
 
 =head1 CHANGES
+
+=over 4
+
+=item Release Name: 0.12
+
+=over 4
+
+=item *
+
+Fixed bug that sometimes prevented Music::Tag from working at all.  Added some level 4 debug messages.
+
+=back
+
+=back
+
 
 =over 4
 
