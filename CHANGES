@@ -1,4 +1,17 @@
 CHANGES
+    Release Name: 0.13
+        *   Added option allow_stream, which will allow scrobbling of http
+            streams if set to true (default false). Feature untested.
+
+        *   Fixed bug in password submition (thanks joeblow1102)
+
+        *   Added support for password@host value in MPD_HOST
+
+        *   Searched, without success, for memory leak. If anyone wants to
+            help, uncomment the Storable lines and start looking into it...
+
+        *   Added (documented) support for Proxy server
+
     Release Name: 0.12
         *   Fixed bug that sometimes prevented Music::Tag from working at
             all. Added some level 4 debug messages.

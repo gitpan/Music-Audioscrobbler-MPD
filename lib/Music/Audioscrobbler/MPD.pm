@@ -1,5 +1,6 @@
 package Music::Audioscrobbler::MPD;
-our $VERSION = 0.12;
+our $VERSION = 0.13;
+require 5.006;
 
 # Copyright (c) 2007 Edward J. Allen III
 # Some code and inspiration from Audio::MPD Copyright (c) 2005 Tue Abrahamsen, Copyright (c) 2006 Nicholas J. Humfrey, Copyright (c) 2007 Jerome Quelin
@@ -112,6 +113,7 @@ use IO::Socket;
 use IO::File;
 use Config::Options;
 use POSIX qw(WNOHANG);
+#use Storable;
 
 
 sub _default_options {
@@ -128,6 +130,7 @@ sub _default_options {
        logfile            => undef,
        default_cache_time => 86400,
        mpd_password       => undef,
+       allow_stream       => 0,
        mpd_server         => $ENV{MPD_HOST} || 'localhost',
        mpd_port           => $ENV{MPD_PORT} || 6600,
        music_directory    => "/mnt/media/music/MP3s",
@@ -167,7 +170,20 @@ sub new {
     $self->options->fromfile_perl( $self->options->{optionfile} );
     $self->options($options);
     $self->{scrobble_ok} = 1;
+    $self->_convert_password();
 
+	if ($self->options->{lastfm_client_id} eq "tst") {
+		$self->status(0, "WARNING: Using client id 'tst' is NO LONGER approved.  Please use 'mam' or other assigned ID");
+	}
+    if ($self->options("mpd_server") =~ /^(.*)@(.*)/) {
+    	$self->options->{"mpd_server"} = $2;
+    	$self->options->{"mpd_password"} = $1;
+    }
+    return $self;
+}
+
+sub _convert_password {
+    my $self = shift;
     unless ( $self->options('lastfm_md5password') ) {
         if ( $self->options('lastfm_password') ) {
             $self->options->{lastfm_md5password} =
@@ -175,12 +191,8 @@ sub new {
             delete $self->options->{lastfm_password};
         }
     }
-
-	if ($self->options->{lastfm_client_id} eq "tst") {
-		$self->status(0, "WARNING: Using client id 'tst' is NO LONGER approved.  Please use 'mam' or other assigned ID");
-	}
-    return $self;
 }
+
 
 =item monitor_mpd()
 
@@ -297,6 +309,14 @@ True if you want to Music::Tag info to override file info
 
 Options for Music::Tag 
 
+=item proxy_server
+
+Specify a procy server in the form http://proxy.server.tld:8080.  Please note that environment is checked for HTTP_PROXY, so you may not need this option.
+
+=item allow_stream
+
+If set to true, will scrobble HTTP streams. 
+
 =back
 
 =back
@@ -348,6 +368,7 @@ sub connect {
         $self->status( 3, "Already connected just fine." );
         return 1;
     }
+
     $self->mpdsock(
                     IO::Socket::INET->new( PeerAddr => $self->options("mpd_server"),
                                            PeerPort => $self->options("mpd_port"),
@@ -439,7 +460,7 @@ send password to mpd.
 
 sub send_password {
     my $self = shift;
-    $self->send_command( "password ", $self->options->("mpd_password"));
+    $self->send_command( "password ", $self->options("mpd_password"));
 }
 
 =item get_info($command)
@@ -584,7 +605,12 @@ sub new_info {
     my $cinfo = shift;
     $self->{current_song} = $cinfo->{file};
     if ( $self->{current_song} =~ /^http/i ) {
-        $self->{current_file} = undef;
+        if ($self->options("allow_stream")) {
+            $self->{current_file} = 0;
+        }
+        else {
+            $self->{current_file} = undef;
+        }
     }
     elsif ( -e File::Spec->rel2abs( $self->{current_song}, $self->options->{music_directory} ) ) {
         $self->{current_file} =
@@ -648,6 +674,9 @@ sub song_change {
     else {
         $self->status( 4, "Not announcing start of play for: ", $self->{current_file} );
     }
+    $self->status("4", "Storing debug info");
+    #$Storable::forgive_me = 1;
+    #store($self, $self->options->{logfile}.".debug");
 }
 
 =item update_info()
@@ -824,6 +853,36 @@ L<musicmpdscrobble>, L<Music::Audioscrobbler::Submit>, L<Music::Tag>
 =for changes continue
 
 =head1 CHANGES
+
+=over 4
+
+=item Release Name: 0.13
+
+=over 4
+
+=item *
+
+Added option allow_stream, which will allow scrobbling of http streams if set to true (default false).  Feature untested.
+
+=item *
+
+Fixed bug in password submition (thanks joeblow1102)
+
+=item *
+
+Added support for password@host value in MPD_HOST
+
+=item *
+
+Searched, without success, for memory leak. If anyone wants to help, uncomment the Storable lines and start looking into it...
+
+=item *
+
+Added (documented) support for Proxy server
+
+=back
+
+=back
 
 =over 4
 

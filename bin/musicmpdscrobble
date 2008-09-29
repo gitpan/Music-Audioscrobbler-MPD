@@ -186,6 +186,9 @@ after editing it.  Here is an example config file:
 	# If you have installed the Music::Tag module, set to 1.
 		musictag	  => 0,
 
+    # If you want information from musictag to overwrite info from mpd (not recommended) set to 1
+        musictag_overwrite => 0,
+
 	# Specify the music_directory path for MPD. 
 		music_directory		  => "/mnt/media/music/MP3s",
 
